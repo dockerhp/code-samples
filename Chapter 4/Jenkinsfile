@@ -1,0 +1,19 @@
+node('debian') {
+    git 'https://github.com/dockerhp/code-samples.git'
+    dir('Chapter 4/logstash') {
+        stage 'Deploy ELK'
+        sh '''
+            docker run -d --name=elastic elasticsearch:1.7.1
+            sleep 30 # Wait for elasticsearch to properly boot
+            docker run --name=kibana -d --link elastic:elasticsearch -p 80:5601 kibana:4.1.1
+            sleep 30
+            docker build -t mylogstash .
+            docker run --name=logstash -d --link=elastic:elasticsearch -p 1514:1514/udp mylogstash -f /etc/logstash.conf
+            sleep 60 # Wait for logstash to properly boot
+        '''
+        stage 'Testing'
+        sh 'for i in `seq 1 100`; do logger -n 127.0.0.1 -P 1514 -t test jenkins test for logger$i; done'
+        sleep 30 // wait for logstash to finish flushing logs to elasticsearch
+        sh 'docker exec elastic /usr/bin/curl -v --silent http://localhost:9200/_cat/indices'
+    }
+}
