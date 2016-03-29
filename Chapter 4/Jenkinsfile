@@ -1,4 +1,4 @@
-node('debian') {
+node {
     git 'https://github.com/dockerhp/code-samples.git'
     dir('Chapter 4/logstash') {
         stage 'Deploy ELK'
